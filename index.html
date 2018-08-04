@@ -6,24 +6,15 @@
 		<style type="text/css">
 			body {
 				margin: 0;
-				background: #ff0000;
 			}
 			
 			#headerCanvas {
-				background: #00ff00;
+				background: lightblue;
 			}
 		</style>
+		<script src="./headerCanvas.js"></script>
 	</head>
-	<body>
+	<body onresize="onResize()" onload="main()">
 		<canvas id="headerCanvas"></canvas>
-		<script>
-			var canvas = document.getElementById("headerCanvas");
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-			var context = canvas.getContext("2d");
-			context.moveTo(0,0);
-			context.lineTo(200,100);
-			context.stroke();
-		</script>
 	</body>
 </html>
