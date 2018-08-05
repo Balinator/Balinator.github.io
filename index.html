@@ -15,6 +15,10 @@
 		<script src="./headerCanvas.js"></script>
 	</head>
 	<body onresize="onResize()" onload="main()">
-		<canvas id="headerCanvas"></canvas>
+		<canvas id="headerCanvas"
+				onmousemove="onMouseMove(event)"
+				onmouseout="onMouseLeave()"
+				onmousedown="onMouseDown(event)">
+		</canvas>
 	</body>
 </html>
