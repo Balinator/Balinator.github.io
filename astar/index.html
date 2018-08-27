@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Astar</title>
+		<style type="text/css">
+			body {
+				margin: 0;
+			}
+			
+			#headerCanvas {
+				background: lightblue;
+			}
+		</style>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.10/seedrandom.min.js"></script>
+		<script src="./headerCanvas.js"></script>
+	</head>
+	<body onresize="onResize()" onload="main()">
+		<canvas id="headerCanvas"
+				onmousedown="onMouseDown(event)"
+				oncontextmenu="return false;">
+		</canvas>
+	</body>
+</html>

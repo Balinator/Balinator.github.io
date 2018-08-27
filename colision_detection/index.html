@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Bubles</title>
+		<style type="text/css">
+			body {
+				margin: 0;
+			}
+			
+			#headerCanvas {
+				background: lightblue;
+			}
+		</style>
+		<script src="./headerCanvas.js"></script>
+	</head>
+	<body onresize="onResize()" onload="main()">
+		<canvas id="headerCanvas"
+				onmousemove="onMouseMove(event)"
+				onmouseout="onMouseLeave()">
+		</canvas>
+	</body>
+</html>
