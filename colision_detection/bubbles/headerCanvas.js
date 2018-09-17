@@ -74,6 +74,7 @@ function Circle (x, y, radius, fill, dx, dy){
 			
 			if(dist_2 < Math.pow(this.r + cir.r, 2)){
 				count++;
+				break;
 			}
 		}
 		if(count > 0){
