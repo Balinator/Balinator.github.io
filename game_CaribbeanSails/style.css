@@ -1,0 +1,17 @@
+body {
+    margin: 0px;
+    padding: 0px;
+    border: 0px;
+    background: dodgerblue;
+}
+
+#canvas {
+    background: red;
+    display:block;
+}
+
+.resources {
+    backface-visibility: hidden;
+    visibility: hidden;
+    display: none;
+}
