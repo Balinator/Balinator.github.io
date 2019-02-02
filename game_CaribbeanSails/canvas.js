@@ -1,3 +1,7 @@
+document.oncontextmenu = function () {
+    return false;
+};
+
 class IdManager {
     static nextId = 0;
 
@@ -14,22 +18,73 @@ class UtilFunctions {
     }
 }
 
-let canvas;
-let context;
-let map;
+class GameLoop {
+    static canvas;
+    static context;
+    static map;
 
-let mouseX;
-let mouseY;
+    static mouseX;
+    static mouseY;
 
-let selectedElement = null;
+    static selectedElement = null;
+
+    static onResize() {
+        GameLoop.canvas = document.getElementById("canvas");
+        GameLoop.canvas.width = window.innerWidth;
+        GameLoop.canvas.height = window.innerHeight;
+        GameLoop.context = GameLoop.canvas.getContext("2d");
+    }
+    static main() {
+        GameLoop.onResize();
+        GameLoop.initialize();
+        GameLoop.animate();
+    }
+    static initialize() {
+        let img = document.getElementById("background");
+        let pixel = document.getElementById("background-pixel");
+        GameLoop.map = new Map(img, pixel);
+    }
+
+    static animate() {
+        GameLoop.logic();
+        GameLoop.drawMap();
+        window.requestAnimationFrame(GameLoop.animate);
+    }
+    static logic() {
+        GameLoop.map.moveMouse(GameLoop.mouseX, GameLoop.mouseY);
+    }
+    static drawMap() {
+        GameLoop.context.clearRect(0, 0, canvas.width, canvas.height);
+        GameLoop.map.draw();
+
+        let color = GameLoop.map.getPixelOfMouse();
+        let mouseCoordinates = GameLoop.map.getCoordinatesOnScreen(GameLoop.mouseX, GameLoop.mouseY);
+        GameLoop.debugInformation([
+            "r: " + color[0] + " g: " + color[1] + " b: " + color[2] + " a: " + color[3],
+            "x: " + Math.round(mouseCoordinates.x) + " y: " + Math.round(mouseCoordinates.y),
+            "selected: " + (GameLoop.selectedElement ? GameLoop.selectedElement.id : "")
+        ]);
+    }
+    static debugInformation(information) {
+        GameLoop.context.beginPath();
+        GameLoop.context.fillStyle = '#000000';
+        GameLoop.context.rect(0, 0, 200, information.length * 10 + 5);
+        GameLoop.context.fill();
+        GameLoop.context.fillStyle = '#ffffff';
+        for (let i = 0; i < information.length; ++i) {
+            let info = information[i];
+            GameLoop.context.fillText(info, 10, i * 10 + 10);
+        }
+    }
+}
 
 function onScroll(event) {
-    map.scrollUpDown(event.deltaY / 1000.0);
+    GameLoop.map.scrollUpDown(event.deltaY / 1000.0);
 }
 
 function onMouseMove(event) {
-    mouseX = event.x;
-    mouseY = event.y;
+    GameLoop.mouseX = event.x;
+    GameLoop.mouseY = event.y;
 }
 
 function onKeyDown(event) {
@@ -38,110 +93,49 @@ function onKeyDown(event) {
         case 'W':
         case 'w':
         case 'ArrowUp':
-            map.move(0, -1);
+            GameLoop.map.move(0, -1);
             break;
         case 'S':
         case 's':
         case 'ArrowDown':
-            map.move(0, 1);
+            GameLoop.map.move(0, 1);
             break;
         case 'A':
         case 'a':
         case 'ArrowLeft':
-            map.move(-1, 0);
+            GameLoop.map.move(-1, 0);
             break;
         case 'D':
         case 'd':
         case 'ArrowRight':
-            map.move(1, 0);
+            GameLoop.map.move(1, 0);
             break;
         case 'Q':
         case 'q':
         case '+':
-            map.scrollUpDown(-0.1);
+            GameLoop.map.scrollUpDown(-0.1);
             break;
         case 'E':
         case 'e':
         case '-':
-            map.scrollUpDown(0.1);
+            GameLoop.map.scrollUpDown(0.1);
             break;
     }
 }
 
-document.oncontextmenu = function () {
-    return false;
-};
-
 function onMouseClick(event) {
-    let coordinates = map.getCoordinatesOfScreen(event.x, event.y);
+    let coordinates = GameLoop.map.getCoordinatesOnScreen(event.x, event.y);
 
     switch (event.button) {
         case 0:
-            selectedElement = map.getSelected(coordinates);
-            break;
-        case 1:
-            console.log(event);
+            GameLoop.selectedElement = GameLoop.map.getSelected(coordinates);
             break;
         case 2:
-            if (selectedElement !== null) {
-                selectedElement.destinationX = coordinates.x;
-                selectedElement.destinationY = coordinates.y;
+            if (GameLoop.selectedElement !== null) {
+                GameLoop.selectedElement.destinationX = coordinates.x;
+                GameLoop.selectedElement.destinationY = coordinates.y;
             }
             break;
-    }
-}
-
-function onResize() {
-    canvas = document.getElementById("canvas");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    context = canvas.getContext("2d");
-}
-
-function main() {
-    onResize();
-    initialize();
-    animate();
-}
-
-function initialize() {
-    let img = document.getElementById("background");
-    let pixel = document.getElementById("background-pixel");
-    map = new Map(img, pixel);
-}
-
-function animate() {
-    logic();
-    drawMap();
-    window.requestAnimationFrame(animate);
-}
-
-function logic() {
-    map.moveMouse(mouseX, mouseY);
-}
-
-function drawMap() {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    map.draw();
-
-    let color = map.getPixelOnMouse();
-    let mouseCoordinates = map.getCoordinatesOfScreen(mouseX, mouseY);
-    this.debugInformation([
-        "r: " + color[0] + " g: " + color[1] + " b: " + color[2] + " a: " + color[3],
-        "x: " + Math.round(mouseCoordinates.x) + " y: " + Math.round(mouseCoordinates.y),
-        "selected: " + (selectedElement ? selectedElement.id : "")
-    ]);
-}
-
-function debugInformation(information) {
-    context.beginPath();
-    context.fillStyle = '#000000';
-    context.rect(0, 0, 200, information.length * 10 + 5);
-    context.fill();
-    context.fillStyle = '#ffffff';
-    for (let i = 0; i < information.length; ++i) {
-        let info = information[i];
-        context.fillText(info, 10, i * 10 + 10);
     }
 }
 
@@ -204,13 +198,11 @@ class Map {
     getPixel(x, y) {
         return this.pixelMap.getImageData(x, y, 1, 1).data;
     };
-
     getPixelOnScreen(x, y) {
         return this.getPixel(this.x + x * this.scroll, this.y + y * this.scroll);
     };
-
-    getPixelOnMouse() {
-        return this.getPixelOnScreen(mouseX, mouseY);
+    getPixelOfMouse() {
+        return this.getPixelOnScreen(GameLoop.mouseX, GameLoop.mouseY);
     };
 
     draw() {
@@ -218,37 +210,34 @@ class Map {
         this.drawTowns();
         this.drawConvoys();
     };
-
     drawConvoys() {
         for (let key in this.convoys) {
             let convoy = this.convoys[key];
             convoy.animate();
         }
     }
-
     drawTowns() {
         for (let key in this.towns) {
             let town = this.towns[key];
             town.draw();
         }
     }
-
     drawMap() {
-        context.drawImage(this.visibleMap,
+        GameLoop.context.drawImage(this.visibleMap,
             this.x, this.y, this.viewPortX * this.scroll, this.viewPortY * this.scroll,
             0, 0, this.viewPortX, this.viewPortY);
 
     };
 
     scrollUpDown(num) {
-        this.x += mouseX * this.scroll;
-        this.y += mouseY * this.scroll;
+        this.x += GameLoop.mouseX * this.scroll;
+        this.y += GameLoop.mouseY * this.scroll;
 
         this.scroll += num;
         this.scroll = UtilFunctions.minMax(minScroll, this.scroll, maxScroll);
 
-        this.x -= mouseX * this.scroll;
-        this.y -= mouseY * this.scroll;
+        this.x -= GameLoop.mouseX * this.scroll;
+        this.y -= GameLoop.mouseY * this.scroll;
 
         try {
             this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
@@ -257,13 +246,13 @@ class Map {
             let newSX = this.width / this.viewPortX;
             let newSY = this.height / this.viewPortY;
 
-            this.x += mouseX * this.scroll;
-            this.y += mouseY * this.scroll;
+            this.x += GameLoop.mouseX * this.scroll;
+            this.y += GameLoop.mouseY * this.scroll;
 
             this.scroll = newSX < newSY ? newSX : newSY;
 
-            this.x -= mouseX * this.scroll;
-            this.y -= mouseY * this.scroll;
+            this.x -= GameLoop.mouseX * this.scroll;
+            this.y -= GameLoop.mouseY * this.scroll;
 
             this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
             this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
@@ -282,7 +271,6 @@ class Map {
             this.move(0, 1);
         }
     };
-
     move(x, y) {
         if (x < 0) {
             this.x -= 10 * this.scroll;
@@ -299,13 +287,12 @@ class Map {
         this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
     };
 
-    getCoordinatesOfScreen(x, y) {
+    getCoordinatesOnScreen(x, y) {
         return {
             x: this.x + x * this.scroll,
             y: this.y + y * this.scroll
         };
     };
-
     getCoordinates(x, y, r = 0) {
         return {
             x: x / this.scroll - this.x / this.scroll,
@@ -324,7 +311,6 @@ class Element {
         this.fill = fill;
     }
 }
-
 class Town extends Element {
     constructor(x, y, fill = '#ff4477') {
         super(x, y, fill);
@@ -332,14 +318,13 @@ class Town extends Element {
     }
 
     draw() {
-        context.beginPath();
-        let coordinate = map.getCoordinates(this.x, this.y, this.radius);
-        context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
-        context.fillStyle = this.fill;
-        context.fill();
+        GameLoop.context.beginPath();
+        let coordinate = GameLoop.map.getCoordinates(this.x, this.y, this.radius);
+        GameLoop.context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
+        GameLoop.context.fillStyle = this.fill;
+        GameLoop.context.fill();
     };
 }
-
 class Convoy extends Element {
     constructor(x, y, fill = '#00ff35') {
         super(x, y, fill);
@@ -353,7 +338,6 @@ class Convoy extends Element {
         this.speed = 0;
         this.recalculateSpeed();
     }
-
 
     recalculateSpeed() {
         if (this.ships.length === 0) {
@@ -370,14 +354,17 @@ class Convoy extends Element {
         this.speed = min;
     };
 
+    animate() {
+        this.update();
+        this.draw(this.x, this.y, this.radius, this.fill);
+    }
     draw() {
-        context.beginPath();
-        let coordinate = map.getCoordinates(this.x, this.y, this.radius);
-        context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
-        context.fillStyle = this.fill;
-        context.fill();
+        GameLoop.context.beginPath();
+        let coordinate = GameLoop.map.getCoordinates(this.x, this.y, this.radius);
+        GameLoop.context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
+        GameLoop.context.fillStyle = this.fill;
+        GameLoop.context.fill();
     };
-
     update() {
         let disX = this.destinationX - this.x;
         let disY = this.destinationY - this.y;
@@ -388,10 +375,6 @@ class Convoy extends Element {
         }
     };
 
-    animate() {
-        this.update();
-        this.draw(this.x, this.y, this.radius, this.fill);
-    }
 }
 
 class Ship {
@@ -399,7 +382,6 @@ class Ship {
         this.shipEnum = shipEnum;
     }
 }
-
 const ShipEnum = {
     PINNACE: {
         name: "PINNACE",
