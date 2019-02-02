@@ -28,6 +28,8 @@ class GameLoop {
 
     static selectedElement = null;
 
+    static panels;
+
     static onResize() {
         GameLoop.canvas = document.getElementById("canvas");
         GameLoop.canvas.width = window.innerWidth;
@@ -43,18 +45,29 @@ class GameLoop {
         let img = document.getElementById("background");
         let pixel = document.getElementById("background-pixel");
         GameLoop.map = new Map(img, pixel);
+        GameLoop.panels = [new Panel(10, window.innerHeight - 160, 300, 150)];
     }
 
     static animate() {
         GameLoop.logic();
-        GameLoop.drawMap();
+        GameLoop.draw();
         window.requestAnimationFrame(GameLoop.animate);
     }
     static logic() {
         GameLoop.map.moveMouse(GameLoop.mouseX, GameLoop.mouseY);
     }
-    static drawMap() {
+    static draw(){
         GameLoop.context.clearRect(0, 0, canvas.width, canvas.height);
+        GameLoop.drawMap();
+        GameLoop.drawPanels();
+    }
+    static drawPanels(){
+        for(let key in GameLoop.panels.filter(p => p.open)){
+            let panel = GameLoop.panels[key];
+            panel.draw();
+        }
+    }
+    static drawMap() {
         GameLoop.map.draw();
 
         let color = GameLoop.map.getPixelOfMouse();
@@ -68,16 +81,15 @@ class GameLoop {
     static debugInformation(information) {
         GameLoop.context.beginPath();
         GameLoop.context.fillStyle = '#000000';
-        GameLoop.context.rect(0, 0, 200, information.length * 10 + 5);
+        GameLoop.context.rect(0, 0, 200, information.length * 10 + 10);
         GameLoop.context.fill();
         GameLoop.context.fillStyle = '#ffffff';
         for (let i = 0; i < information.length; ++i) {
             let info = information[i];
-            GameLoop.context.fillText(info, 10, i * 10 + 10);
+            GameLoop.context.fillText(info, 10, i * 10 + 15);
         }
     }
 }
-
 class GameHandlerEvents {
     static onScroll(event) {
         GameLoop.map.scrollUpDown(event.deltaY / 1000.0);
@@ -299,6 +311,23 @@ class Map {
             y: y / this.scroll - this.y / this.scroll,
             r: r / this.scroll
         };
+    }
+}
+class Panel {
+    constructor(x, y, width, height){
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.fill = '#755000';
+        this.open = true;
+    }
+
+    draw() {
+        GameLoop.context.beginPath();
+        GameLoop.context.fillStyle = this.fill;
+        GameLoop.context.rect(this.x, this.y, this.width, this.height);
+        GameLoop.context.fill();
     }
 }
 
