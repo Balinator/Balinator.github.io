@@ -5,6 +5,14 @@ class IdManager {
         return IdManager.nextId++;
     }
 }
+class UtilFunctions {
+    static minMax(min, val, max) {
+        if (max < min) {
+            throw new Error("Number not valid!");
+        }
+        return Math.min(max, Math.max(min, val));
+    }
+}
 
 let canvas;
 let context;
@@ -81,13 +89,6 @@ function onMouseClick(event) {
             }
             break;
     }
-}
-
-function minMax(min, val, max) {
-    if (max < min) {
-        throw new Error("Number not valid!");
-    }
-    return Math.min(max, Math.max(min, val));
 }
 
 function onResize() {
@@ -244,14 +245,14 @@ class Map {
         this.y += mouseY * this.scroll;
 
         this.scroll += num;
-        this.scroll = minMax(minScroll, this.scroll, maxScroll);
+        this.scroll = UtilFunctions.minMax(minScroll, this.scroll, maxScroll);
 
         this.x -= mouseX * this.scroll;
         this.y -= mouseY * this.scroll;
 
         try {
-            this.x = minMax(0, this.x, this.width - this.viewPortX * this.scroll);
-            this.y = minMax(0, this.y, this.height - this.viewPortY * this.scroll);
+            this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
+            this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
         } catch (e) {
             let newSX = this.width / this.viewPortX;
             let newSY = this.height / this.viewPortY;
@@ -264,8 +265,8 @@ class Map {
             this.x -= mouseX * this.scroll;
             this.y -= mouseY * this.scroll;
 
-            this.x = minMax(0, this.x, this.width - this.viewPortX * this.scroll);
-            this.y = minMax(0, this.y, this.height - this.viewPortY * this.scroll);
+            this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
+            this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
         }
     };
 
@@ -294,8 +295,8 @@ class Map {
             this.y += 10 * this.scroll;
         }
 
-        this.x = minMax(0, this.x, this.width - this.viewPortX * this.scroll);
-        this.y = minMax(0, this.y, this.height - this.viewPortY * this.scroll);
+        this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
+        this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
     };
 
     getCoordinatesOfScreen(x, y) {
