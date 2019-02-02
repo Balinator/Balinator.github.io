@@ -72,7 +72,7 @@ function Circle (x, y, radius, fill, dx, dy){
 			if(cir === this) continue;
 			var dist_2 = Math.pow(cir.x - this.x, 2) + Math.pow(cir.y - this.y, 2);
 			
-			if(dist_2 < Math.pow(this.r + cir.r, 2)){
+			if(dist_2 < Math.pow(this.r + cir.radius, 2)){
 				count++;
 				break;
 			}
