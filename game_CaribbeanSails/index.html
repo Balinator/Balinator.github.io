@@ -8,11 +8,11 @@
     </head>
     <body onresize="GameLoop.onResize()"
           onload="GameLoop.main()"
-          onkeydown="onKeyDown(event)">
+          onkeydown="GameHandlerEvents.onKeyDown(event)">
         <canvas id="canvas"
-                onwheel="onScroll(event)"
-                onmouseup="onMouseClick(event)"
-                onmousemove="onMouseMove(event)">
+                onwheel="GameHandlerEvents.onScroll(event)"
+                onmouseup="GameHandlerEvents.onMouseClick(event)"
+                onmousemove="GameHandlerEvents.onMouseMove(event)">
         </canvas>
         <div class="resources">
             <img id="background"

@@ -78,64 +78,64 @@ class GameLoop {
     }
 }
 
-function onScroll(event) {
-    GameLoop.map.scrollUpDown(event.deltaY / 1000.0);
-}
-
-function onMouseMove(event) {
-    GameLoop.mouseX = event.x;
-    GameLoop.mouseY = event.y;
-}
-
-function onKeyDown(event) {
-    console.log(event.key);
-    switch (event.key) {
-        case 'W':
-        case 'w':
-        case 'ArrowUp':
-            GameLoop.map.move(0, -1);
-            break;
-        case 'S':
-        case 's':
-        case 'ArrowDown':
-            GameLoop.map.move(0, 1);
-            break;
-        case 'A':
-        case 'a':
-        case 'ArrowLeft':
-            GameLoop.map.move(-1, 0);
-            break;
-        case 'D':
-        case 'd':
-        case 'ArrowRight':
-            GameLoop.map.move(1, 0);
-            break;
-        case 'Q':
-        case 'q':
-        case '+':
-            GameLoop.map.scrollUpDown(-0.1);
-            break;
-        case 'E':
-        case 'e':
-        case '-':
-            GameLoop.map.scrollUpDown(0.1);
-            break;
+class GameHandlerEvents {
+    static onScroll(event) {
+        GameLoop.map.scrollUpDown(event.deltaY / 1000.0);
     }
-}
+    static onMouseMove(event) {
+        GameLoop.mouseX = event.x;
+        GameLoop.mouseY = event.y;
+    }
+    static onMouseClick(event) {
+        let coordinates = GameLoop.map.getCoordinatesOnScreen(event.x, event.y);
 
-function onMouseClick(event) {
-    let coordinates = GameLoop.map.getCoordinatesOnScreen(event.x, event.y);
+        switch (event.button) {
+            case 0:
+                GameLoop.selectedElement = GameLoop.map.getSelected(coordinates);
+                break;
+            case 2:
+                if (GameLoop.selectedElement !== null) {
+                    GameLoop.selectedElement.destinationX = coordinates.x;
+                    GameLoop.selectedElement.destinationY = coordinates.y;
+                }
+                break;
+        }
+    }
 
-    switch (event.button) {
-        case 0:
-            GameLoop.selectedElement = GameLoop.map.getSelected(coordinates);
-            break;
-        case 2:
-            if (GameLoop.selectedElement !== null) {
-                GameLoop.selectedElement.destinationX = coordinates.x;
-                GameLoop.selectedElement.destinationY = coordinates.y;
-            }
-            break;
+    static onKeyDown(event) {
+        console.log(event.key);
+        switch (event.key) {
+            case 'W':
+            case 'w':
+            case 'ArrowUp':
+                GameLoop.map.move(0, -1);
+                break;
+            case 'S':
+            case 's':
+            case 'ArrowDown':
+                GameLoop.map.move(0, 1);
+                break;
+            case 'A':
+            case 'a':
+            case 'ArrowLeft':
+                GameLoop.map.move(-1, 0);
+                break;
+            case 'D':
+            case 'd':
+            case 'ArrowRight':
+                GameLoop.map.move(1, 0);
+                break;
+            case 'Q':
+            case 'q':
+            case '+':
+                GameLoop.map.scrollUpDown(-0.1);
+                break;
+            case 'E':
+            case 'e':
+            case '-':
+                GameLoop.map.scrollUpDown(0.1);
+                break;
+        }
     }
 }
 
