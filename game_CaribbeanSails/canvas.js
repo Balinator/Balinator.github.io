@@ -1,3 +1,11 @@
+class IdManager {
+    static nextId = 0;
+
+    static getNextId() {
+        return IdManager.nextId++;
+    }
+}
+
 let canvas;
 let context;
 let map;
@@ -6,12 +14,6 @@ let mouseX;
 let mouseY;
 
 let selectedElement = null;
-
-let _nextId = 0;
-
-function getNextId() {
-    return _nextId++;
-}
 
 function onScroll(event) {
     map.scrollUpDown(event.deltaY / 1000.0);
@@ -120,44 +122,67 @@ function logic() {
 function drawMap() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     map.draw();
+
+    let color = map.getPixelOnMouse();
+    let mouseCoordinates = map.getCoordinatesOfScreen(mouseX, mouseY);
+    this.debugInformation([
+        "r: " + color[0] + " g: " + color[1] + " b: " + color[2] + " a: " + color[3],
+        "x: " + Math.round(mouseCoordinates.x) + " y: " + Math.round(mouseCoordinates.y),
+        "selected: " + (selectedElement ? selectedElement.id : "")
+    ]);
 }
 
-function Map(visibleMap, pixelMap) {
-    this.visibleMap = visibleMap;
+function debugInformation(information) {
+    context.beginPath();
+    context.fillStyle = '#000000';
+    context.rect(0, 0, 200, information.length * 10 + 5);
+    context.fill();
+    context.fillStyle = '#ffffff';
+    for (let i = 0; i < information.length; ++i) {
+        let info = information[i];
+        context.fillText(info, 10, i * 10 + 10);
+    }
+}
 
-    let pixelCanvas = document.createElement('canvas');
-    pixelCanvas.width = visibleMap.width;
-    pixelCanvas.height = visibleMap.height;
-    this.pixelMap = pixelCanvas.getContext('2d');
-    this.pixelMap.drawImage(pixelMap,
-        0, 0, visibleMap.width, visibleMap.height,
-        0, 0, visibleMap.width, visibleMap.height);
+const maxScroll = 3;
+const minScroll = 0.5;
 
-    this.x = 0;
-    this.y = 0;
-    this.viewPortX = window.innerWidth;
-    this.viewPortY = window.innerHeight;
-    this.width = this.visibleMap.width;
-    this.height = this.visibleMap.height;
+class Map {
+    constructor(visibleMap, pixelMap) {
+        this.visibleMap = visibleMap;
 
-    this.towns = [
-        new Town(252, 476),
-        new Town(876, 396),
-        new Town(952, 318),
-        new Town(1060, 322),
-        new Town(1219, 393),
-        new Town(1436, 615),
-        new Town(1438, 10857)
-    ];
-    this.convois = [
-        new Convoy(300, 500)
-    ];
+        let pixelCanvas = document.createElement('canvas');
+        pixelCanvas.width = visibleMap.width;
+        pixelCanvas.height = visibleMap.height;
+        this.pixelMap = pixelCanvas.getContext('2d');
+        this.pixelMap.drawImage(pixelMap,
+            0, 0, visibleMap.width, visibleMap.height,
+            0, 0, visibleMap.width, visibleMap.height);
 
-    this.scroll = 2.8;
-    const maxScroll = 3;
-    const minScroll = 0.5;
+        this.x = 0;
+        this.y = 0;
+        this.viewPortX = window.innerWidth;
+        this.viewPortY = window.innerHeight;
+        this.width = this.visibleMap.width;
+        this.height = this.visibleMap.height;
 
-    this.getSelected = function (coordinates) {
+        this.towns = [
+            new Town(252, 476),
+            new Town(876, 396),
+            new Town(952, 318),
+            new Town(1060, 322),
+            new Town(1219, 393),
+            new Town(1436, 615),
+            new Town(1438, 10857)
+        ];
+        this.convoys = [
+            new Convoy(300, 500)
+        ];
+
+        this.scroll = 2.8;
+    }
+
+    getSelected(coordinates) {
         for (let key in this.towns) {
             let town = this.towns[key];
             let dis = Math.pow(coordinates.x - town.x, 2) + Math.pow(coordinates.y - town.y, 2);
@@ -165,8 +190,8 @@ function Map(visibleMap, pixelMap) {
                 return town;
             }
         }
-        for (let key in this.convois) {
-            let convoy = this.convois[key];
+        for (let key in this.convoys) {
+            let convoy = this.convoys[key];
             let dis = Math.pow(coordinates.x - convoy.x, 2) + Math.pow(coordinates.y - convoy.y, 2);
             if (dis < Math.pow(convoy.radius, 2)) {
                 return convoy;
@@ -175,57 +200,46 @@ function Map(visibleMap, pixelMap) {
         return null;
     };
 
-    this.getPixel = function (x, y) {
+    getPixel(x, y) {
         return this.pixelMap.getImageData(x, y, 1, 1).data;
     };
 
-    this.getPixelOnScreen = function (x, y) {
+    getPixelOnScreen(x, y) {
         return this.getPixel(this.x + x * this.scroll, this.y + y * this.scroll);
     };
 
-    this.getPixelOnMouse = function () {
+    getPixelOnMouse() {
         return this.getPixelOnScreen(mouseX, mouseY);
     };
 
-    function debugInformation(information) {
-        context.beginPath();
-        context.fillStyle = '#000000';
-        context.rect(0, 0, 200, information.length * 10 + 5);
-        context.fill();
-        context.fillStyle = '#ffffff';
-        for (let i = 0; i < information.length; ++i) {
-            let info = information[i];
-            context.fillText(info, 10, i * 10 + 10);
+    draw() {
+        this.drawMap();
+        this.drawTowns();
+        this.drawConvoys();
+    };
+
+    drawConvoys() {
+        for (let key in this.convoys) {
+            let convoy = this.convoys[key];
+            convoy.animate();
         }
     }
 
-    this.draw = function () {
-        this.drawMap();
-
-        let color = this.getPixelOnMouse();
-        let mouseCoordinates = this.getCoordinatesOfScreen(mouseX, mouseY);
-        debugInformation([
-            "r: " + color[0] + " g: " + color[1] + " b: " + color[2] + " a: " + color[3],
-            "x: " + Math.round(mouseCoordinates.x) + " y: " + Math.round(mouseCoordinates.y),
-            "selected: " + (selectedElement ? selectedElement.id : "")
-        ]);
-    };
-
-    this.drawMap = function () {
-        context.drawImage(this.visibleMap,
-            this.x, this.y, this.viewPortX * this.scroll, this.viewPortY * this.scroll,
-            0, 0, this.viewPortX, this.viewPortY);
+    drawTowns() {
         for (let key in this.towns) {
             let town = this.towns[key];
             town.draw();
         }
-        for (let key in this.convois) {
-            let convoy = this.convois[key];
-            convoy.animate();
-        }
+    }
+
+    drawMap() {
+        context.drawImage(this.visibleMap,
+            this.x, this.y, this.viewPortX * this.scroll, this.viewPortY * this.scroll,
+            0, 0, this.viewPortX, this.viewPortY);
+
     };
 
-    this.scrollUpDown = function (num) {
+    scrollUpDown(num) {
         this.x += mouseX * this.scroll;
         this.y += mouseY * this.scroll;
 
@@ -255,8 +269,7 @@ function Map(visibleMap, pixelMap) {
         }
     };
 
-
-    this.moveMouse = function (x, y) {
+    moveMouse(x, y) {
         if (x < 10) {
             this.move(-1, 0);
         } else if (x > window.innerWidth - 10) {
@@ -269,7 +282,7 @@ function Map(visibleMap, pixelMap) {
         }
     };
 
-    this.move = function (x, y) {
+    move(x, y) {
         if (x < 0) {
             this.x -= 10 * this.scroll;
         } else if (x > 0) {
@@ -285,14 +298,14 @@ function Map(visibleMap, pixelMap) {
         this.y = minMax(0, this.y, this.height - this.viewPortY * this.scroll);
     };
 
-    this.getCoordinatesOfScreen = function (x, y) {
+    getCoordinatesOfScreen(x, y) {
         return {
             x: this.x + x * this.scroll,
             y: this.y + y * this.scroll
         };
     };
 
-    this.getCoordinates = function (x, y, r = 0) {
+    getCoordinates(x, y, r = 0) {
         return {
             x: x / this.scroll - this.x / this.scroll,
             y: y / this.scroll - this.y / this.scroll,
@@ -303,7 +316,7 @@ function Map(visibleMap, pixelMap) {
 
 class Element {
     constructor(x, y, fill) {
-        this.id = getNextId();
+        this.id = IdManager.getNextId();
         this.x = x;
         this.y = y;
         this.radius = 0;
@@ -380,13 +393,15 @@ class Convoy extends Element {
     }
 }
 
-function Ship(shipEnum) {
-    this.shipEnum = shipEnum;
+class Ship {
+    constructor(shipEnum) {
+        this.shipEnum = shipEnum;
+    }
 }
 
-let ShipEnum = Object.freeze({
-    "PINASSE": {
-        name: "PINASSE",
+const ShipEnum = {
+    PINNACE: {
+        name: "PINNACE",
         agility: 100,
         crew: 30,
         health: 25,
@@ -395,7 +410,7 @@ let ShipEnum = Object.freeze({
         guns: 8,
         seals: 1
     },
-    "BRIGG": {
+    BRIGG: {
         name: "BRIGG",
         agility: 95,
         crew: 50,
@@ -405,7 +420,7 @@ let ShipEnum = Object.freeze({
         guns: 16,
         seals: 2
     },
-    "FREGATT": {
+    FREGATT: {
         name: "FREGATT",
         agility: 80,
         crew: 100,
@@ -415,5 +430,5 @@ let ShipEnum = Object.freeze({
         guns: 26,
         seals: 3
     }
-});
+};
 
