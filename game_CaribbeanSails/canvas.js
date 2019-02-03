@@ -2,7 +2,13 @@ document.oncontextmenu = function () {
     return false;
 };
 
-class IdManager {
+class StaticClass {
+    constructor() {
+        throw new TypeError("Cannot construct StaticClass instances directly");
+    }
+}
+
+class IdManager extends StaticClass {
     static nextId = 0;
 
     static getNextId() {
@@ -10,7 +16,7 @@ class IdManager {
     }
 }
 
-class UtilFunctions {
+class UtilFunctions extends StaticClass {
     static minMax(min, val, max) {
         if (max < min) {
             throw new Error("Number not valid!");
@@ -19,7 +25,7 @@ class UtilFunctions {
     }
 }
 
-class GameLoop {
+class GameLoop extends StaticClass {
     static canvas;
     static context;
     static map;
@@ -114,7 +120,7 @@ class GameLoop {
     }
 }
 
-class GameHandlerEvents {
+class GameHandlerEvents extends StaticClass {
     static onScroll(event) {
         GameLoop.map.scrollUpDown(event.deltaY / 1000.0);
     }
@@ -125,16 +131,18 @@ class GameHandlerEvents {
     }
 
     static onMouseClick(event) {
-        if(this.onUiClick(event)){return;}
+        if (this.onUiClick(event)) {
+            return;
+        }
         this.onMapClick(event);
     }
 
     static onUiClick(event) {
         let coordinates = {x: event.x, y: event.y};
         let filteredPanels = GameLoop.panels.filter(p => p instanceof ClickablePanel);
-        for(let key in filteredPanels) {
+        for (let key in filteredPanels) {
             let panel = filteredPanels[key];
-            if(panel.isClickedOn(coordinates)){
+            if (panel.isClickedOn(coordinates)) {
                 panel.click(event);
                 return true;
             }
@@ -387,6 +395,9 @@ class Map {
 
 class Panel {
     constructor(x, y, width, height) {
+        if (new.target === Panel) {
+            throw new TypeError("Cannot construct Abstract instances directly");
+        }
         this.x = x;
         this.y = y;
         this.width = width;
@@ -425,10 +436,13 @@ class InfoPanel extends Panel {
     }
 }
 
-class ClickablePanel extends Panel{
-    constructor(x, y, width, height, onClick){
+class ClickablePanel extends Panel {
+    constructor(x, y, width, height, onClick) {
         super(x, y, width, height);
         this.onClick = onClick;
+        if (new.target === ClickablePanel) {
+            throw new TypeError("Cannot construct StaticClass instances directly");
+        }
     }
 
     click(event) {
@@ -482,7 +496,7 @@ class Town extends Element {
         this.convoys = [];
     }
 
-    setUpPanel () {
+    setUpPanel() {
         GameLoop.panels[0].open = true;
         let convoys = '';
         GameLoop.selectedElement.convoys.forEach(c => convoys += c.name + ", ");
@@ -494,7 +508,7 @@ class Town extends Element {
 
     addConvoy(convoy) {
         this.convoys.push(convoy);
-        if(GameLoop.selectedElement === this) {
+        if (GameLoop.selectedElement === this) {
             this.setUpPanel();
         }
     }
@@ -505,7 +519,7 @@ class Town extends Element {
 
     removeConvoy(convoy) {
         this.convoys.splice(this.convoys.indexOf(convoy), 1);
-        if(GameLoop.selectedElement === this) {
+        if (GameLoop.selectedElement === this) {
             this.setUpPanel();
         }
     }
