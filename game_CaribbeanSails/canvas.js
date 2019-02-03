@@ -55,8 +55,12 @@ class GameLoop {
             new InfoPanel(10, window.innerHeight - 160, 300, 150,
                 ['SomethingSomethingSomethingSomething', 'NothingNothingNothing'],
                 15, 'Arial'
-            )
+            ),
+            new ButtonPanel(10, 100, 100, 40, 'Click here!', function () {
+                console.log('Clicked!');
+            })
         ];
+        GameLoop.panels[1].open = true;
     }
 
     static animate() {
@@ -76,8 +80,9 @@ class GameLoop {
     }
 
     static drawPanels() {
-        for (let key in GameLoop.panels.filter(p => p.open)) {
-            let panel = GameLoop.panels[key];
+        let filteredPanels = GameLoop.panels.filter(p => p.open);
+        for (let key in filteredPanels) {
+            let panel = filteredPanels[key];
             panel.draw();
         }
     }
@@ -120,6 +125,24 @@ class GameHandlerEvents {
     }
 
     static onMouseClick(event) {
+        if(this.onUiClick(event)){return;}
+        this.onMapClick(event);
+    }
+
+    static onUiClick(event) {
+        let coordinates = {x: event.x, y: event.y};
+        let filteredPanels = GameLoop.panels.filter(p => p instanceof ClickablePanel);
+        for(let key in filteredPanels) {
+            let panel = filteredPanels[key];
+            if(panel.isClickedOn(coordinates)){
+                panel.click(event);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static onMapClick(event) {
         let coordinates = GameLoop.map.getCoordinatesOnScreen(event.x, event.y);
 
         switch (event.button) {
@@ -129,7 +152,7 @@ class GameHandlerEvents {
                 if (GameLoop.selectedElement instanceof Town) {
                     GameLoop.selectedElement.setUpPanel();
                 }
-                break;
+                return true;
             case 2:
                 if (GameLoop.selectedElement instanceof Convoy) {
                     let selectedTown = GameLoop.map.getSelectedTown(coordinates);
@@ -139,8 +162,9 @@ class GameHandlerEvents {
                         GameLoop.selectedElement.goTo(coordinates);
                     }
                 }
-                break;
+                return true;
         }
+        return false;
     }
 
     static onKeyDown(event) {
@@ -380,9 +404,9 @@ class Panel {
 }
 
 class InfoPanel extends Panel {
-    constructor(x, y, width, height, information, fontSize, fontFamily) {
+    constructor(x, y, width, height, texts, fontSize = 10, fontFamily = 'Arial') {
         super(x, y, width, height);
-        this.information = information;
+        this.texts = texts;
         this.fontSize = fontSize;
         this.fontFamily = fontFamily;
     }
@@ -390,14 +414,53 @@ class InfoPanel extends Panel {
     draw() {
         super.draw();
         GameLoop.context.fillStyle = '#ffffff';
-        let startY = this.y + (this.height - this.information.length * this.fontSize) / 2.0 + this.fontSize;
-        for (let i = 0; i < this.information.length; ++i) {
-            let info = this.information[i];
+        let startY = this.y + (this.height - this.texts.length * this.fontSize) / 2.0 + this.fontSize;
+        for (let i = 0; i < this.texts.length; ++i) {
+            let info = this.texts[i];
             let startX = this.x + this.width / 2.0;
             GameLoop.context.textAlign = 'center';
             GameLoop.context.font = this.fontSize + 'px ' + this.fontFamily;
             GameLoop.context.fillText(info, startX, startY + i * this.fontSize, this.width);
         }
+    }
+}
+
+class ClickablePanel extends Panel{
+    constructor(x, y, width, height, onClick){
+        super(x, y, width, height);
+        this.onClick = onClick;
+    }
+
+    click(event) {
+        this.onClick(event);
+    }
+
+    isClickedOn(coordinates) {
+        return coordinates.x > this.x
+            && coordinates.x < this.x + this.width
+            && coordinates.y > this.y
+            && coordinates.y < this.y + this.height;
+
+    }
+}
+
+class ButtonPanel extends ClickablePanel {
+    constructor(x, y, width, height, text, onClick, fontSize = 10, fontFamily = 'Arial') {
+        super(x, y, width, height, onClick);
+        this.text = text;
+        this.fontSize = fontSize;
+        this.fontFamily = fontFamily;
+    }
+
+    draw() {
+        super.draw();
+        GameLoop.context.fillStyle = '#ffffff';
+        let startY = this.y + (this.height - this.fontSize) / 2.0;
+        let info = this.text;
+        let startX = this.x + this.width / 2.0;
+        GameLoop.context.textAlign = 'center';
+        GameLoop.context.font = this.fontSize + 'px ' + this.fontFamily;
+        GameLoop.context.fillText(info, startX, startY + this.fontSize, this.width);
     }
 }
 
@@ -423,7 +486,7 @@ class Town extends Element {
         GameLoop.panels[0].open = true;
         let convoys = '';
         GameLoop.selectedElement.convoys.forEach(c => convoys += c.name + ", ");
-        GameLoop.panels[0].information = [
+        GameLoop.panels[0].texts = [
             'Name: ' + GameLoop.selectedElement.name,
             'Convoys: ' + convoys.substring(0, convoys.length - 2)
         ];
