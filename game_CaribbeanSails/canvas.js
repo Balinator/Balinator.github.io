@@ -53,9 +53,9 @@ class GameLoop {
         GameLoop.map = new Map(img, pixel);
         GameLoop.panels = [
             new InfoPanel(10, window.innerHeight - 160, 300, 150,
-                ['SomethingSomethingSomethingSomething','NothingNothingNothing'],
+                ['SomethingSomethingSomethingSomething', 'NothingNothingNothing'],
                 15, 'Arial'
-                )
+            )
         ];
     }
 
@@ -125,11 +125,19 @@ class GameHandlerEvents {
         switch (event.button) {
             case 0:
                 GameLoop.selectedElement = GameLoop.map.getSelected(coordinates);
+                GameLoop.panels[0].open = false;
+                if (GameLoop.selectedElement instanceof Town) {
+                    GameLoop.selectedElement.setUpPanel();
+                }
                 break;
             case 2:
-                if (GameLoop.selectedElement !== null) {
-                    GameLoop.selectedElement.destinationX = coordinates.x;
-                    GameLoop.selectedElement.destinationY = coordinates.y;
+                if (GameLoop.selectedElement instanceof Convoy) {
+                    let selectedTown = GameLoop.map.getSelectedTown(coordinates);
+                    if (selectedTown !== null) {
+                        GameLoop.selectedElement.goToTown(selectedTown);
+                    } else {
+                        GameLoop.selectedElement.goTo(coordinates);
+                    }
                 }
                 break;
         }
@@ -195,29 +203,30 @@ class Map {
         this.height = this.visibleMap.height;
 
         this.towns = [
-            new Town(252, 476),
+            new Town(252, 476, 'Corpus Cristi'),
             new Town(876, 396),
             new Town(952, 318),
             new Town(1060, 322),
             new Town(1219, 393),
             new Town(1436, 615),
-            new Town(1438, 10857)
+            new Town(1438, 1085, 'Havana')
         ];
         this.convoys = [
-            new Convoy(300, 500)
+            new Convoy(300, 500, 'You')
         ];
 
         this.scroll = 2.8;
     }
 
     getSelected(coordinates) {
-        for (let key in this.towns) {
-            let town = this.towns[key];
-            let dis = Math.pow(coordinates.x - town.x, 2) + Math.pow(coordinates.y - town.y, 2);
-            if (dis < Math.pow(town.radius, 2)) {
-                return town;
-            }
+        let selected = this.getSelectedConvoy(coordinates);
+        if (selected !== null) {
+            return selected
         }
+        return this.getSelectedTown(coordinates);
+    }
+
+    getSelectedConvoy(coordinates) {
         for (let key in this.convoys) {
             let convoy = this.convoys[key];
             let dis = Math.pow(coordinates.x - convoy.x, 2) + Math.pow(coordinates.y - convoy.y, 2);
@@ -226,25 +235,36 @@ class Map {
             }
         }
         return null;
-    };
+    }
+
+    getSelectedTown(coordinates) {
+        for (let key in this.towns) {
+            let town = this.towns[key];
+            let dis = Math.pow(coordinates.x - town.x, 2) + Math.pow(coordinates.y - town.y, 2);
+            if (dis < Math.pow(town.radius, 2)) {
+                return town;
+            }
+        }
+        return null;
+    }
 
     getPixel(x, y) {
         return this.pixelMap.getImageData(x, y, 1, 1).data;
-    };
+    }
 
     getPixelOnScreen(x, y) {
         return this.getPixel(this.x + x * this.scroll, this.y + y * this.scroll);
-    };
+    }
 
     getPixelOfMouse() {
         return this.getPixelOnScreen(GameLoop.mouseX, GameLoop.mouseY);
-    };
+    }
 
     draw() {
         this.drawMap();
         this.drawTowns();
         this.drawConvoys();
-    };
+    }
 
     drawConvoys() {
         for (let key in this.convoys) {
@@ -264,8 +284,7 @@ class Map {
         GameLoop.context.drawImage(this.visibleMap,
             this.x, this.y, this.viewPortX * this.scroll, this.viewPortY * this.scroll,
             0, 0, this.viewPortX, this.viewPortY);
-
-    };
+    }
 
     scrollUpDown(num) {
         this.x += GameLoop.mouseX * this.scroll;
@@ -295,7 +314,7 @@ class Map {
             this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
             this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
         }
-    };
+    }
 
     moveMouse(x, y) {
         if (x < 10) {
@@ -308,7 +327,7 @@ class Map {
         } else if (y > window.innerHeight - 10) {
             this.move(0, 1);
         }
-    };
+    }
 
     move(x, y) {
         if (x < 0) {
@@ -324,14 +343,14 @@ class Map {
 
         this.x = UtilFunctions.minMax(0, this.x, this.width - this.viewPortX * this.scroll);
         this.y = UtilFunctions.minMax(0, this.y, this.height - this.viewPortY * this.scroll);
-    };
+    }
 
     getCoordinatesOnScreen(x, y) {
         return {
             x: this.x + x * this.scroll,
             y: this.y + y * this.scroll
         };
-    };
+    }
 
     getCoordinates(x, y, r = 0) {
         return {
@@ -349,7 +368,7 @@ class Panel {
         this.width = width;
         this.height = height;
         this.fill = '#755000';
-        this.open = true;
+        this.open = false;
     }
 
     draw() {
@@ -383,19 +402,49 @@ class InfoPanel extends Panel {
 }
 
 class Element {
-    constructor(x, y, fill) {
+    constructor(x, y, fill, name) {
         this.id = IdManager.getNextId();
         this.x = x;
         this.y = y;
         this.radius = 0;
         this.fill = fill;
+        this.name = name;
     }
 }
 
 class Town extends Element {
-    constructor(x, y, fill = '#ff4477') {
-        super(x, y, fill);
+    constructor(x, y, name = 'none', fill = '#ff4477') {
+        super(x, y, fill, name);
         this.radius = 40;
+        this.convoys = [];
+    }
+
+    setUpPanel () {
+        GameLoop.panels[0].open = true;
+        let convoys = '';
+        GameLoop.selectedElement.convoys.forEach(c => convoys += c.name + ", ");
+        GameLoop.panels[0].information = [
+            'Name: ' + GameLoop.selectedElement.name,
+            'Convoys: ' + convoys.substring(0, convoys.length - 2)
+        ];
+    }
+
+    addConvoy(convoy) {
+        this.convoys.push(convoy);
+        if(GameLoop.selectedElement === this) {
+            this.setUpPanel();
+        }
+    }
+
+    hasConvoy(convoy) {
+        return this.convoys.indexOf(convoy) !== -1;
+    }
+
+    removeConvoy(convoy) {
+        this.convoys.splice(this.convoys.indexOf(convoy), 1);
+        if(GameLoop.selectedElement === this) {
+            this.setUpPanel();
+        }
     }
 
     draw() {
@@ -404,14 +453,16 @@ class Town extends Element {
         GameLoop.context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
         GameLoop.context.fillStyle = this.fill;
         GameLoop.context.fill();
-    };
+    }
 }
 
 class Convoy extends Element {
-    constructor(x, y, fill = '#00ff35') {
-        super(x, y, fill);
+    constructor(x, y, name = 'none', fill = '#00ff35') {
+        super(x, y, fill, name);
         this.radius = 25;
 
+        this.destinationTown = null;
+        this.destinationTownReached = false;
         this.destinationX = 1000;
         this.destinationY = 1000;
 
@@ -419,6 +470,21 @@ class Convoy extends Element {
 
         this.speed = 0;
         this.recalculateSpeed();
+    }
+
+    goToTown(town) {
+        this.goTo({x: town.x, y: town.y});
+        this.destinationTown = town;
+    }
+
+    goTo(coordinates) {
+        if (this.destinationTownReached) {
+            this.destinationTown.removeConvoy(this);
+        }
+        this.destinationTown = null;
+        this.destinationTownReached = false;
+        this.destinationX = coordinates.x;
+        this.destinationY = coordinates.y;
     }
 
     recalculateSpeed() {
@@ -434,7 +500,7 @@ class Convoy extends Element {
             }
         }
         this.speed = min;
-    };
+    }
 
     animate() {
         this.update();
@@ -442,22 +508,31 @@ class Convoy extends Element {
     }
 
     draw() {
-        GameLoop.context.beginPath();
-        let coordinate = GameLoop.map.getCoordinates(this.x, this.y, this.radius);
-        GameLoop.context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
-        GameLoop.context.fillStyle = this.fill;
-        GameLoop.context.fill();
-    };
+        if (this.destinationTownReached === false) {
+            GameLoop.context.beginPath();
+            let coordinate = GameLoop.map.getCoordinates(this.x, this.y, this.radius);
+            GameLoop.context.arc(coordinate.x, coordinate.y, coordinate.r, 0, 2 * Math.PI);
+            GameLoop.context.fillStyle = this.fill;
+            GameLoop.context.fill();
+        }
+    }
 
     update() {
         let disX = this.destinationX - this.x;
         let disY = this.destinationY - this.y;
         let magnitude = Math.sqrt(Math.pow(disX, 2) + Math.pow(disY, 2));
         if (magnitude > this.speed) {
-            this.x = this.x + (disX / magnitude * this.speed);
-            this.y = this.y + (disY / magnitude * this.speed);
+            this.x += disX / magnitude * this.speed;
+            this.y += disY / magnitude * this.speed;
+        } else {
+            this.x += disX;
+            this.y += disY;
+            if (this.destinationTown !== null && !this.destinationTown.hasConvoy(this)) {
+                this.destinationTownReached = true;
+                this.destinationTown.addConvoy(this);
+            }
         }
-    };
+    }
 
 }
 
